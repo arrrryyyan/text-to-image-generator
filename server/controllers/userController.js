@@ -71,7 +71,7 @@ const paymentRazorpay = async(req,res)=>{
         const {userId, planId} = req.body;
         const userData = await userModel.findById(userId);
 
-        if(!user || !planId){
+        if(!userData || !planId){
             return res.json({success:false, message: "Missing Details"})
         }
         let credits, plan, amount, date;
@@ -91,6 +91,7 @@ const paymentRazorpay = async(req,res)=>{
                 plan='Business'
                 credits=5000
                 amount=250
+                break;
 
             default:
                 return res.json({success:false, message:'Plan not found'});
@@ -126,16 +127,16 @@ const verifyRazorpay = async(req,res)=>{
         const {razorpay_order_id} = req.body;
         const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
 
-        if(orderInfo.status){
+        if(orderInfo.status === 'paid'){
             const transactionData = await transactionModel.findById(orderInfo.receipt)
             if(transactionData.payment){
-                return res.json({success:false, message: 'Payment failed'})
+                return res.json({success:false, message: 'Payment Already Processed'})
             }
             const userData = await userModel.findById(transactionData.userId)
             const creditBalance = userData.creditBalance + transactionData.credits
             await userModel.findByIdAndUpdate(userData._id,{creditBalance});
 
-            await transactionModel.findById(transactionData._id,{payment:true})
+            await transactionModel.findByIdAndUpdate(transactionData._id,{payment:true})
             res.json({success:true, message:"Credits Added"})
         }else{
             res.json({success:false, message:"Payment failed"})

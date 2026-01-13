@@ -1,5 +1,5 @@
 import axios from "axios";
-import { createContext, useEffect, useState } from "react";
+import { createContext, useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -16,7 +16,7 @@ const AppContextProvider = (props) => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const navigate = useNavigate();
 
-  const loadCreditsData = async () => {
+  const loadCreditsData = useCallback(async () => {
     try {
       const { data } = await axios.get(
         backendUrl + '/api/user/credits'
@@ -30,7 +30,7 @@ const AppContextProvider = (props) => {
       console.error(error);
       toast.error(error.message);
     }
-  };
+  }, [backendUrl]);
 
   const generateImage = async (prompt) => {
     try {
@@ -64,12 +64,13 @@ const AppContextProvider = (props) => {
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common['token'] = token;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadCreditsData();
     } else {
       delete axios.defaults.headers.common['token'];
       setCredit(0);
     }
-  }, [token]);
+  }, [token, loadCreditsData]);
 
   const value = {
     user,
